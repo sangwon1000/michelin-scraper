@@ -4,6 +4,7 @@ import time
 import csv
 from datetime import datetime
 
+
 # Base URL for the Michelin Guide website with pagination
 base_url = "https://guide.michelin.com/en/restaurants/page/{}"
 
@@ -52,6 +53,7 @@ with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
             print(f"Total Number of Restaurants: {expected_total}")
         else:
             print("Failed to find the total number of restaurants.")
+            expected_total = total_restaurants  # Fallback to the current count
 
         # Find all restaurant links
         restaurants = soup.find_all('a', href=True)
@@ -59,6 +61,9 @@ with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
         if not restaurants:
             print(f"No more restaurants found on page {page}. Stopping.")
             break  # Stop if no restaurants are found on the current page
+        
+        # Flag to check if any new restaurants were found on this page
+        new_restaurants_found = False
         
         # Loop through the links and filter valid restaurants
         for restaurant in restaurants:
@@ -76,6 +81,12 @@ with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
                     
                     # Write the restaurant name and URL to the CSV file
                     writer.writerow([name, full_url])
+                    new_restaurants_found = True
+        
+        # If no new restaurants were found on this page, stop the loop
+        if not new_restaurants_found:
+            print(f"No new restaurants found on page {page}. Stopping.")
+            break
         
         # Sleep for a few seconds to avoid overloading the website
         time.sleep(2)  # Adjust the sleep duration as necessary
@@ -86,6 +97,6 @@ with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
 # Final validation check
 print(f"\nTotal Restaurants Scraped: {total_restaurants}")
 if total_restaurants == expected_total:
-    print("Success! The total number of restaurants matches the expected count of 17,336.")
+    print("Success! The total number of restaurants matches the expected count.")
 else:
-    print(f"Warning: The total number of restaurants ({total_restaurants}) does not match the expected count of 17,336.")
+    print(f"Warning: The total number of restaurants ({total_restaurants}) does not match the expected count of {expected_total}.")
