@@ -34,6 +34,10 @@ for index, row in hong_kong_restaurants.iterrows():
     address = soup.find_all('div', class_='data-sheet__block--text')[0]  # First occurrence for address
     price_cuisine_div = soup.find_all('div', class_='data-sheet__block--text')[1]  # Second occurrence for price and cuisine
 
+    # Extract badge information
+    badge_items = soup.find_all('div', class_='data-sheet__classification-item--content')
+    badge_text = badge_items[1].text.strip() if len(badge_items) > 1 else 'N/A'
+
     # Split the text to separate price and cuisine
     price_cuisine_text = price_cuisine_div.text.strip() if price_cuisine_div else 'N/A'
     price, cuisine = price_cuisine_text.split('·') if '·' in price_cuisine_text else (price_cuisine_text, 'N/A')
@@ -54,6 +58,7 @@ for index, row in hong_kong_restaurants.iterrows():
         'Address': address.text.strip() if address else 'N/A',
         'Price': price.strip() if price else 'N/A',
         'Cuisine': cuisine,
+        'Badge Text': badge_text,
         'Description': description.text.strip() if description else 'N/A',
         'Services': services.text.strip() if services else 'N/A',
         'Map Iframe URL': map_iframe['src'] if map_iframe else 'N/A',
