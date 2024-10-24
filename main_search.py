@@ -114,6 +114,7 @@ for index, row in df.iterrows():
 
     except (TimeoutException, NoSuchElementException, ElementNotInteractableException) as e:
         print(f"Error occurred for {name}: {str(e)}. Moving to the next restaurant.")
+        driver.get("https://www.google.com/maps")
         continue
 
     # Save the updated DataFrame after each iteration
