@@ -11,7 +11,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 from selenium.webdriver.chrome.options import Options
 
 # Load the CSV file into a DataFrame
-df = pd.read_csv('hong_kong_restaurants_data_with_coordinates.csv')
+df = pd.read_csv('hong_kong_restaurants_data.csv')
 
 # Set up Chrome options for headless mode
 chrome_options = Options()
@@ -19,7 +19,7 @@ chrome_options.add_argument("--headless")  # Enable headless mode
 chrome_options.add_argument("--window-size=1920,1080")  # Set window size to ensure proper rendering
 
 # Initialize the Chrome WebDriver with headless options
-driver = webdriver.Chrome(options=chrome_options)  # or use webdriver.Firefox() if using Firefox
+driver = webdriver.Chrome()  # or use webdriver.Firefox() if using Firefox
 
 # Open Google Maps
 driver.get("https://www.google.com/maps")
@@ -29,6 +29,13 @@ def extract_coordinates(url):
     match = re.search(r'@(-?\d+\.\d+),(-?\d+\.\d+)', url)
     if match:
         return float(match.group(1)), float(match.group(2))
+    return None, None
+
+# Function to extract coordinates from iframe src
+def extract_coordinates_from_iframe(iframe_src):
+    match = re.search(r'!3d(-?\d+\.\d+)!2d(-?\d+\.\d+)', iframe_src)
+    if match:
+        return float(match.group(2)), float(match.group(1))  # Note: Lng comes first, then Lat
     return None, None
 
 # Function to perform WebDriverWait with retries
@@ -76,21 +83,34 @@ for index, row in df.iterrows():
         
         print(f"Coordinates for {name} (by name): Lat: {lat_name}, Lng: {lng_name}")
 
-        # get share link
+        # Click share button
         share_button = wait_for_clickable(driver, (By.XPATH, "//button[@data-value='Share']"))
         share_button.click()
 
-        share_link = wait_for_element(driver, (By.CSS_SELECTOR, "input.vrsrZe[readonly][type='text']"), timeout=30)
-        share_url = share_link.get_attribute('value')
-        print(f"Share link for {name}: {share_url}")
-
-        # Store the share URL in the DataFrame
-        df.at[index, 'Share_URL'] = share_url
+        time.sleep(1 + random.uniform(0.5, 1.5))  # Short pause after clicking share button
         
+        # Click on "Embed a map" tab
+        embed_tab = wait_for_clickable(driver, (By.XPATH, "//button[contains(text(), 'Embed a map')]"))
+        embed_tab.click()
+
+        # Get the embed code using a more robust XPath
+        embed_code = wait_for_element(driver, (By.XPATH, "//input[@readonly and @type='text' and contains(@value, '<iframe')]"), timeout=30)
+        embed_html = embed_code.get_attribute('value')
+
+        # Extract iframe src from embed HTML
+        iframe_src_match = re.search(r'src="([^"]+)"', embed_html)
+        if iframe_src_match:
+            iframe_src = iframe_src_match.group(1)
+            lng_name, lat_name = extract_coordinates_from_iframe(iframe_src)
+            print(f"Coordinates for {name} (from embed): Lat: {lat_name}, Lng: {lng_name}")
+        else:
+            print(f"Could not extract iframe src for {name}")
+            lat_name, lng_name = None, None
+
         # Close the share dialog
         close_button = wait_for_clickable(driver, (By.XPATH, "//button[@aria-label='Close']"))
         close_button.click()
-        
+
         time.sleep(1 + random.uniform(0.5, 1.5))  # Short pause after closing dialog
         
         # Search by address
@@ -111,6 +131,7 @@ for index, row in df.iterrows():
         df.at[index, 'Lng_Name'] = lng_name
         df.at[index, 'Lat_Address'] = lat_address
         df.at[index, 'Lng_Address'] = lng_address
+        break
 
     except (TimeoutException, NoSuchElementException, ElementNotInteractableException) as e:
         print(f"Error occurred for {name}: {str(e)}. Moving to the next restaurant.")
@@ -118,7 +139,7 @@ for index, row in df.iterrows():
         continue
 
     # Save the updated DataFrame after each iteration
-    df.to_csv('hong_kong_restaurants_data_with_coordinates.csv', index=False)
+    df.to_csv('hong_kong_restaurants_data_with_coordinates_new.csv', index=False)
 
     time.sleep(2 + random.uniform(1, 2))  # Pause between iterations, with some randomness
 
