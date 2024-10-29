@@ -64,7 +64,7 @@ def get_place_details(place_id):
     headers = {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': api_key,
-        'X-Goog-FieldMask': 'id,displayName,formattedAddress,googleMapsUri,location,rating,userRatingCount,reviews,types,internationalPhoneNumber,websiteUri,priceLevel'
+        'X-Goog-FieldMask': 'id,displayName,formattedAddress,googleMapsUri,location,rating,userRatingCount,types,internationalPhoneNumber,websiteUri,priceLevel'
     }
     
     response = requests.get(f"{base_url}{place_id}", headers=headers)
@@ -77,8 +77,10 @@ def get_place_details(place_id):
     return result
 
 if __name__ == "__main__":
-    restaurant = 'tim ho wan'
-    location = 'hong kong'
+    restaurant = 'Trattoria Felino'
+    location = 'Shop 3&4, GF, Pao Yip Building, 1-7 Ship Street, Wan Chai, Hong Kong, Hong Kong SAR China'
+    restaurant = '돌다메'
+    location = '제주 제주시 외도일동'
     place_details = get_place_id(restaurant, location)
     if place_details:
         print("Basic Place Details:")
@@ -103,10 +105,5 @@ if __name__ == "__main__":
             print(f"Website: {detailed_info.get('websiteUri', 'N/A')}")
             print(f"Price Level: {detailed_info.get('priceLevel', 'N/A')}")
             
-            print("\nReviews:")
-            for review in detailed_info.get('reviews', [])[:3]:  # Limit to first 3 reviews
-                print(f"- Rating: {review.get('rating', 'N/A')}")
-                # print(f"  Text: {review.get('text', {}).get('text', 'N/A')[:100)}...")  # Truncate long reviews
-                # print()
         else:
             print("Failed to fetch detailed information.")
